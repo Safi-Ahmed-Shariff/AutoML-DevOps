@@ -16,7 +16,7 @@ Y = df['label']
 model = LinearRegression()
 model.fit(X, Y)
 
-output_path = 'model.pkl'
+output_path = os.path.join(os.getcwd(), 'model.pkl')
 joblib.dump(model, output_path)
 
 if os.path.exists(output_path):
