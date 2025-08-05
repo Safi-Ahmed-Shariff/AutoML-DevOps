@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 import joblib
+import os
 
 #This is a dummy data
 data = {
@@ -15,5 +16,10 @@ Y = df['label']
 model = LinearRegression()
 model.fit(X, Y)
 
-joblib.dump(model, 'model.pkl')
-print("Model trained and saved as model.pkl")
+output_path = 'model.pkl'
+joblib.dump(model, output_path)
+
+if os.path.exists(output_path):
+    print(f"✅ Model trained and saved as: {output_path}")
+else:
+    print("❌ Model not saved!")

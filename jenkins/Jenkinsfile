@@ -22,9 +22,15 @@ pipeline {
         }
         stage('Run Model Trainer') {
             steps {
-                    bat 'docker run -v %cd%\\output:/app/output model-trainer'
+                    bat 'docker run -v "$PWD/docker:/app" model-trainer'
             }
         }
-
+        stage('Upload model to S3 bucket') {
+            steps {
+                script{
+                    bat 'python upload_to_s3.py'
+                }
+            }
+        }
     }
 }
