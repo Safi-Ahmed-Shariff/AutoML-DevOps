@@ -22,7 +22,11 @@ pipeline {
         }
         stage('Run Model Trainer') {
             steps {
-                    bat 'docker run -v "%CD%\\docker:/app" model-trainer'
+                   bat """
+                            docker create --name temp_container model-trainer
+                            docker cp temp_container:/tmp/model.pkl docker/model.pkl
+                            docker rm temp_container
+                        """
             }
         }
         stage('Upload model to S3 bucket') {
