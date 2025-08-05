@@ -16,13 +16,13 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t model-trainer ./docker'
+                    bat 'docker build -t model-trainer ./docker'
                 }
             }
         }
         stage('Run Model Trainer') {
             steps {
-                    sh 'docker run model-trainer'
+                    bat 'docker run model-trainer'
             }
         }
 
