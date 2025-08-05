@@ -22,7 +22,7 @@ pipeline {
         }
         stage('Run Model Trainer') {
             steps {
-                    bat 'docker run model-trainer'
+                    bat 'docker run -v %cd%\\output:/app/output model-trainer'
             }
         }
 
