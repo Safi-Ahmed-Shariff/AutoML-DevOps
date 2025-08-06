@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Train Your Model</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="upload-container">
+    <h1>Train Your Model</h1>
+    <form id="upload-form" method="POST" enctype="multipart/form-data" action="/upload">
+      <label for="csvFile" class="custom-file-upload">
+        📂 Browse CSV File
+        <input type="file" name="file" id="csvFile" accept=".csv" required />
+      </label>
+      <button type="submit">Upload & Train</button>
+    </form>
+  </div>
+</body>
+</html>
