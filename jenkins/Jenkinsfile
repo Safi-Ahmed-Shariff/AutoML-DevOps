@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')     // Jenkins credential ID
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key-id') // Jenkins credential ID
-        AWS_DEFAULT_REGION = 'us-east-1'
+        AWS_DEFAULT_REGION = 'ap-south-1'
     }
 
     stages {
@@ -21,25 +21,31 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    bat 'docker build -t model-trainer ./docker'
-                }
+                bat 'docker build -t model-trainer ./docker'
             }
         }
 
         stage('Run Model Trainer') {
             steps {
                 script {
-                    // Ensure latest CSV file is used
-                    def csvFiles = bat(script: 'dir /b /o:-d train-uploader\\uploads\\*.csv', returnStdout: true).trim().split('\r\n')
-                    if (csvFiles.length == 0) {
-                        error('❌ No CSV file found in uploads directory.')
-                    }
-                    def latestCsv = csvFiles[0]
+                    // Get the latest CSV file (sorted by date descending)
+                    def csvOutput = bat(
+                        script: 'for /f "delims=" %f in (\'dir /b /o:-d train-uploader\\uploads\\*.csv\') do @echo %f & goto :eof',
+                        returnStdout: true
+                    ).trim()
 
-                    // Run container and execute training
+                    if (csvOutput == "") {
+                        error('❌ No CSV file found in train-uploader/uploads/')
+                    }
+
+                    def latestCsv = csvOutput
+                    echo "✅ Latest CSV file detected: ${latestCsv}"
+
+                    // Run the Docker container with volume mount
                     bat """
-                        docker run --rm -v "%CD%\\train-uploader\\uploads:/app/uploads" model-trainer ^
+                        docker run --rm ^
+                        -v "%CD%\\train-uploader\\uploads:/app/uploads" ^
+                        model-trainer ^
                         python train.py "/app/uploads/${latestCsv}"
                     """
                 }
@@ -48,9 +54,7 @@ pipeline {
 
         stage('Upload model to S3 bucket') {
             steps {
-                script {
-                    bat 'python upload_to_s3.py'
-                }
+                bat 'python upload_to_s3.py'
             }
         }
     }

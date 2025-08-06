@@ -1,7 +1,7 @@
 FROM python:3.9-slim
 
 WORKDIR /app
-
+COPY . .
 COPY requirements.txt .
 
 RUN apt-get update && apt-get upgrade -y && apt-get clean
