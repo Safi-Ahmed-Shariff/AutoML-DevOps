@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')     // ID = credential ID from Jenkins
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key-id') // same here
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')     // Jenkins credential ID
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key-id') // Jenkins credential ID
         AWS_DEFAULT_REGION = 'us-east-1'
     }
 
@@ -26,18 +26,29 @@ pipeline {
                 }
             }
         }
+
         stage('Run Model Trainer') {
             steps {
-                   bat """
-                            docker create --name temp_container model-trainer
-                            docker cp temp_container:/tmp/model.pkl docker/model.pkl
-                            docker rm temp_container
-                        """
+                script {
+                    // Ensure latest CSV file is used
+                    def csvFiles = bat(script: 'dir /b /o:-d train-uploader\\uploads\\*.csv', returnStdout: true).trim().split('\r\n')
+                    if (csvFiles.length == 0) {
+                        error('❌ No CSV file found in uploads directory.')
+                    }
+                    def latestCsv = csvFiles[0]
+
+                    // Run container and execute training
+                    bat """
+                        docker run --rm -v "%CD%\\train-uploader\\uploads:/app/uploads" model-trainer ^
+                        python train.py "/app/uploads/${latestCsv}"
+                    """
+                }
             }
         }
+
         stage('Upload model to S3 bucket') {
             steps {
-                script{
+                script {
                     bat 'python upload_to_s3.py'
                 }
             }

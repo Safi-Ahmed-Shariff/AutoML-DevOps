@@ -1,16 +1,20 @@
 from flask import Flask, request, render_template, redirect, url_for, flash
 import os
 import subprocess
+import shutil
 
-UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')  # Use absolute path for Docker bind
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
 ALLOWED_EXTENSIONS = {'csv'}
 
 app = Flask(__name__)
-app.secret_key = 'safi-super-secret'  # For production, read from env variables
+app.secret_key = 'safi-super-secret'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Ensure the uploads/ folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+DATA_FOLDER = os.path.join(os.getcwd(), '..', 'data')  
+os.makedirs(DATA_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -31,24 +35,37 @@ def upload_file():
         return redirect(request.url)
 
     if file and allowed_file(file.filename):
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        filename = file.filename
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
 
-        # Call the Docker container
         try:
             subprocess.run([
-                "docker", "run",
-                "--rm",  # Auto-remove the container after running
-                "-v", f"{UPLOAD_FOLDER}:/app/uploads",  # Bind mount
-                "model-trainer",  # Make sure this image is built and available
-                "python", "train.py", f"/app/uploads/{file.filename}"
+                "docker", "run", "--rm",
+                "-v", f"{UPLOAD_FOLDER}:/app/uploads",
+                "model-trainer",
+                "python", "train.py", f"/app/uploads/{filename}"
             ], check=True)
-            flash("File uploaded and training completed!")
+            flash("✅ Training completed inside Docker!")
         except subprocess.CalledProcessError:
-            flash("Training failed. Check container logs.")
+            flash("❌ Docker training failed!")
+            return redirect(request.url)
+
+        tracked_file_path = os.path.join(DATA_FOLDER, filename)
+        shutil.move(file_path, tracked_file_path)
+
+
+        try:
+            subprocess.run(["git", "add", tracked_file_path], check=True)
+            subprocess.run(["git", "commit", "-m", f"🔼 Uploaded {filename} for training"], check=True)
+            subprocess.run(["git", "push"], check=True)
+            flash("✅ File pushed to GitHub successfully!")
+        except subprocess.CalledProcessError:
+            flash("❌ Git operation failed. Check access or Git status.")
+
         return redirect(url_for('home'))
 
-    flash('Invalid file type. Please upload a .csv file')
+    flash('❌ Invalid file type. Please upload a .csv file.')
     return redirect(request.url)
 
 if __name__ == '__main__':
