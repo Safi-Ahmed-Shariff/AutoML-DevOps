@@ -43,7 +43,7 @@ def upload_file():
             subprocess.run(['git', 'config', '--global', 'user.name', 'CSV Uploader'], check=True)
 
             # Stage changes
-            subprocess.run(['git', 'add', 'train-uploader/uploads/'], check=True)
+            subprocess.run(['git', 'add', 'uploads/'], check=True)
 
             # Commit
             subprocess.run(['git', 'commit', '-m', 'Auto-upload training CSV'], check=True)
