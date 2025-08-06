@@ -1,7 +1,9 @@
 from flask import Flask, request, render_template, redirect, url_for, flash
 import os
 import subprocess
-import shutil
+from dotenv import load_dotenv
+
+load_dotenv()  # Load .env variables
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
 ALLOWED_EXTENSIONS = {'csv'}
@@ -11,10 +13,6 @@ app.secret_key = 'safi-super-secret'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
-DATA_FOLDER = os.path.join(os.getcwd(), '..', 'data')  
-os.makedirs(DATA_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -35,38 +33,34 @@ def upload_file():
         return redirect(request.url)
 
     if file and allowed_file(file.filename):
-        filename = file.filename
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_path)
 
+        # Commit and push
         try:
-            subprocess.run([
-                "docker", "run", "--rm",
-                "-v", f"{UPLOAD_FOLDER}:/app/uploads",
-                "model-trainer",
-                "python", "train.py", f"/app/uploads/{filename}"
-            ], check=True)
-            flash("✅ Training completed inside Docker!")
-        except subprocess.CalledProcessError:
-            flash("❌ Docker training failed!")
-            return redirect(request.url)
+            # Configure git user (do this only once; harmless if repeated)
+            subprocess.run(['git', 'config', '--global', 'user.email', 'uploader@local'], check=True)
+            subprocess.run(['git', 'config', '--global', 'user.name', 'CSV Uploader'], check=True)
 
-        tracked_file_path = os.path.join(DATA_FOLDER, filename)
-        shutil.move(file_path, tracked_file_path)
+            # Stage changes
+            subprocess.run(['git', 'add', 'train-uploader/uploads/'], check=True)
 
+            # Commit
+            subprocess.run(['git', 'commit', '-m', 'Auto-upload training CSV'], check=True)
 
-        try:
-            subprocess.run(["git", "add", tracked_file_path], check=True)
-            subprocess.run(["git", "commit", "-m", f"🔼 Uploaded {filename} for training"], check=True)
-            subprocess.run(["git", "push"], check=True)
-            flash("✅ File pushed to GitHub successfully!")
-        except subprocess.CalledProcessError:
-            flash("❌ Git operation failed. Check access or Git status.")
+            # Push using HTTPS with token
+            github_token = os.environ['GITHUB_TOKEN']
+            repo_url = f"https://{github_token}:x-oauth-basic@github.com/Safi-Ahmed-Shariff/AutoML-DevOps.git"
+            subprocess.run(['git', 'push', repo_url, 'main'], check=True)
+
+            flash("✅ File uploaded and pushed to GitHub!")
+        except subprocess.CalledProcessError as e:
+            flash(f"❌ Git operation failed: {e}")
 
         return redirect(url_for('home'))
 
-    flash('❌ Invalid file type. Please upload a .csv file.')
+    flash('Invalid file type. Please upload a .csv file.')
     return redirect(request.url)
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True)
