@@ -25,30 +25,35 @@ pipeline {
             }
         }
 
-        stage('Run Model Trainer') {
+        stage('Find Latest CSV') {
             steps {
                 script {
-                    // Get the latest CSV file (sorted by date descending)
-                    def csvOutput = bat(
-                        script: 'for /f "delims=" %f in (\'dir /b /o:-d train-uploader\\uploads\\*.csv\') do @echo %f & goto :eof',
+                    def latestCsv = powershell(
+                        script: '''
+                        $files = Get-ChildItem -Path "train-uploader/uploads" -Filter *.csv | Sort-Object LastWriteTime -Descending
+                        if ($files.Count -eq 0) {
+                            Write-Error "❌ No CSV files found in train-uploader/uploads"
+                            exit 1
+                        }
+                        $files[0].Name
+                        ''',
                         returnStdout: true
                     ).trim()
 
-                    if (csvOutput == "") {
-                        error('❌ No CSV file found in train-uploader/uploads/')
-                    }
-
-                    def latestCsv = csvOutput
-                    echo "✅ Latest CSV file detected: ${latestCsv}"
-
-                    // Run the Docker container with volume mount
-                    bat """
-                        docker run --rm ^
-                        -v "%CD%\\train-uploader\\uploads:/app/uploads" ^
-                        model-trainer ^
-                        python train.py "/app/uploads/${latestCsv}"
-                    """
+                    env.LATEST_CSV = latestCsv
+                    echo "✅ Latest CSV file detected: ${env.LATEST_CSV}"
                 }
+            }
+        }
+
+        stage('Run Model Trainer') {
+            steps {
+                bat """
+                docker run --rm ^
+                -v "%CD%\\train-uploader\\uploads:/app/uploads" ^
+                model-trainer ^
+                python train.py "/app/uploads/%LATEST_CSV%"
+                """
             }
         }
 
