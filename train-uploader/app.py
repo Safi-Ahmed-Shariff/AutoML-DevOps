@@ -12,6 +12,7 @@ app = Flask(__name__)
 app.secret_key = 'safi-super-secret'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# Ensure uploads directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
@@ -38,20 +39,21 @@ def upload_file():
 
         # Commit and push
         try:
-            # Configure git user (do this only once; harmless if repeated)
+            repo_root = os.path.abspath(os.path.join(os.getcwd(), '..'))  # Go up one level to AutoML-DevOps
+
+            # Git config
             subprocess.run(['git', 'config', '--global', 'user.email', 'uploader@local'], check=True)
             subprocess.run(['git', 'config', '--global', 'user.name', 'CSV Uploader'], check=True)
 
-            # Stage changes
-            subprocess.run(['git', 'add','train-uploader/uploads'], check=True)
+            # Git add and commit
+            uploads_path = os.path.join('train-uploader', 'uploads')
+            subprocess.run(['git', 'add', uploads_path], cwd=repo_root, check=True)
+            subprocess.run(['git', 'commit', '-m', 'Auto-upload training CSV'], cwd=repo_root, check=True)
 
-            # Commit
-            subprocess.run(['git', 'commit', '-m', 'Auto-upload training CSV'], check=True)
-
-            # Push using HTTPS with token
+            # Push using token
             github_token = os.environ['GITHUB_TOKEN']
             repo_url = f"https://{github_token}:x-oauth-basic@github.com/Safi-Ahmed-Shariff/AutoML-DevOps.git"
-            subprocess.run(['git', 'push', repo_url, 'main'], check=True)
+            subprocess.run(['git', 'push', repo_url, 'main'], cwd=repo_root, check=True)
 
             flash("✅ File uploaded and pushed to GitHub!")
         except subprocess.CalledProcessError as e:
@@ -64,3 +66,4 @@ def upload_file():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
