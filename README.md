@@ -174,49 +174,6 @@ The jenkins/ folder likely contains your pipeline config (Jenkinsfile or helpers
 
 6. run upload_to_s3.py to store artifacts
 
-Example Jenkinsfile (drop into jenkins/Jenkinsfile or repo root):
-
-pipeline {
-  agent any
-  environment {
-    DOCKERHUB = credentials('dockerhub-credentials') // set on Jenkins
-    AWS_ACCESS_KEY_ID = credentials('aws-access-key')
-    AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
-  }
-  stages {
-    stage('Checkout') {
-      steps { checkout scm }
-    }
-    stage('Unit tests') {
-      steps {
-        sh 'python -m pip install -r requirements.txt || true'
-        sh 'pytest -q || true'
-      }
-    }
-    stage('Build Docker') {
-      steps {
-        sh 'docker build -t $DOCKERHUB_USERNAME/automl-devops:${GIT_COMMIT:0:7} ./docker'
-      }
-    }
-    stage('Push Image') {
-      steps {
-        sh 'docker push $DOCKERHUB_USERNAME/automl-devops:${GIT_COMMIT:0:7}'
-      }
-    }
-    stage('Train & Upload') {
-      steps {
-        sh 'python train-uploader/train.py --output models/model.pkl'
-        sh 'python upload_to_s3.py --file models/model.pkl --bucket my-bucket --key models/${GIT_COMMIT:0:7}.pkl'
-      }
-    }
-  }
-  post {
-    success { echo 'Pipeline completed' }
-    failure { mail to: 'you@example.com', subject: "Build failed", body: "Check Jenkins" }
-  }
-}
-
-
 Adjust credentials, test commands and script names to match your actual files. 
 GitHub
 
