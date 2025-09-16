@@ -203,7 +203,7 @@ This script uploads given file(s) to S3. Typical CLI usage:
 
 A minimal implementation (example) uses boto3:
 
-# (example snippet - may differ from your file)
+#(example snippet - may differ from your file)
 import boto3, argparse
 
 def upload_file(file_path, bucket, key):
@@ -226,20 +226,20 @@ GitHub
 
 Create a .env (or set env vars in CI):
 
-# AWS
+#AWS
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...
 
-# S3
+#S3
 S3_BUCKET=my-automl-bucket
 
-# Database (if used)
+#Database (if used)
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=password
 POSTGRES_HOST=localhost
 POSTGRES_DB=automl_db
 
-# App secret (if needed)
+#App secret (if needed)
 SECRET_KEY=mysecret
 
 
