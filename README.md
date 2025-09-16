@@ -1,9 +1,9 @@
-**AutoML-DevOps**
+# AutoML-DevOps 
 
 Full-stack MLOps + DevOps pipeline that demonstrates automated model training, artifact management (S3), containerization, and CI/CD automation (Jenkins + Docker).
 Note: I inspected your repository and created this README to match the repo structure I could see; some file contents were not accessible during inspection, so where necessary I explain expected behavior and give runnable examples you can paste into the repo. (See “Notes & assumptions” at the end.) 
 
-**Table of contents**
+# Table of contents
 
 Project overview
 
@@ -32,7 +32,7 @@ License & contact
 Notes & assumptions (important)
 
 
-**Project overview**
+# Project overview
 
 AutoML-DevOps is a demonstration repo that integrates components commonly used in production DevOps/MLOps pipelines:
 
@@ -45,7 +45,7 @@ AutoML-DevOps is a demonstration repo that integrates components commonly used i
 This README documents what each component does, how the pieces fit together, and how to run the project locally and in CI. 
 GitHub
 
-**High-level architecture**
+# High-level architecture
 
 1. Source code & model code (Python) in the repository → stored in Git.
 
@@ -59,7 +59,7 @@ GitHub
 
 6. (Optional) Orchestration or deployment layer consumes images/artifacts for inference.
 
-Diagram (text):
+**Flow:**
 
 GitHub -> Jenkins -> (tests -> build) -> Docker image -> Registry
                            |
@@ -112,10 +112,10 @@ GitHub
 **source .venv/bin/activate**        # Linux / macOS
 **.venv\Scripts\activate**           # Windows PowerShell
 
-# If repo has requirements.txt:
+#If repo has requirements.txt:
 **pip install -r requirements.txt**
 
-# Otherwise install common deps (example)
+#Otherwise install common deps (example)
 **pip install boto3 scikit-learn pandas**
 
 
@@ -131,7 +131,6 @@ GitHub
 4. Upload an artifact
 
 **python upload_to_s3.py --file path/to/model.pkl --bucket my-bucket --key models/model-v1.pkl**
-
 
 (See upload_to_s3.py usage below for CLI flags and examples.) 
 GitHub
